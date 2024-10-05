@@ -72,7 +72,7 @@ def get_bookmarks(profile_path: Path) -> list[Bookmark]:
 class Plugin(PluginInstance, TriggerQueryHandler):
     def __init__(self) -> None:
         TriggerQueryHandler.__init__(
-            self, id=__name__, name=md_name, description=md_description, synopsis='<query>|reload', defaultTrigger='ff '
+            self, id=__name__, name=md_name, description=md_description, synopsis='<query>|reload', defaultTrigger='br '
         )
         PluginInstance.__init__(self)
         self.profile_path = get_profile_path()
