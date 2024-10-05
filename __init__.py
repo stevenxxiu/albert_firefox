@@ -8,10 +8,9 @@ from typing import Iterator, NamedTuple
 
 from albert import (  # pylint: disable=import-error
     Action,
-    GlobalQueryHandler,
     PluginInstance,
-    RankItem,
     StandardItem,
+    TriggerQueryHandler,
     runDetachedProcess,
 )
 
@@ -70,9 +69,9 @@ def get_bookmarks(profile_path: Path) -> list[Bookmark]:
         return list(cur)
 
 
-class Plugin(PluginInstance, GlobalQueryHandler):
+class Plugin(PluginInstance, TriggerQueryHandler):
     def __init__(self) -> None:
-        GlobalQueryHandler.__init__(
+        TriggerQueryHandler.__init__(
             self, id=__name__, name=md_name, description=md_description, synopsis='<query>|reload', defaultTrigger='ff '
         )
         PluginInstance.__init__(self)
@@ -82,15 +81,14 @@ class Plugin(PluginInstance, GlobalQueryHandler):
     def load_bookmarks(self) -> None:
         self.bookmarks = get_bookmarks(self.profile_path)
 
-    def handleGlobalQuery(self, query) -> list[RankItem]:
-        res = []
+    def handleTriggerQuery(self, query) -> None:
         query_str = query.string.strip()
         if not query_str:
-            return res
+            return
 
-        if query_str == 'ff reload':
+        if query_str == 'reload':
             self.load_bookmarks()
-            return res
+            return
 
         query_str = query_str.lower()
         items_with_score = []
@@ -116,7 +114,6 @@ class Plugin(PluginInstance, GlobalQueryHandler):
                     score,
                 )
             )
-        items_with_score.sort(key=lambda item: item[1])
-        for i, (item, score) in enumerate(items_with_score):
-            res.append(RankItem(item, -i))
-        return res
+        items_with_score.sort(key=lambda item: item[1], reverse=True)
+        for item, _score in items_with_score:
+            query.add(item)
