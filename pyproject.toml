@@ -1,0 +1,21 @@
+[project]
+requires-python = '>=3.12'
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.format]
+quote-style = 'single'
+
+[tool.pylint]
+disable = [
+    'invalid-name',
+    'missing-docstring',
+    'no-member',
+    'too-few-public-methods',
+    'too-many-ancestors',
+]
+max-line-length = 120
+
+[tool.pyright]
+reportMissingModuleSource = false
