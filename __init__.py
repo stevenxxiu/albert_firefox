@@ -72,7 +72,7 @@ def get_bookmarks(profile_path: Path) -> list[Bookmark]:
 class Plugin(PluginInstance, TriggerQueryHandler):
     def __init__(self) -> None:
         TriggerQueryHandler.__init__(
-            self, id=__name__, name=md_name, description=md_description, synopsis='<query>|reload', defaultTrigger='br '
+            self, id=__name__, name=md_name, description=md_description, synopsis='<query>', defaultTrigger='br '
         )
         PluginInstance.__init__(self)
         self.profile_path = get_profile_path()
@@ -84,10 +84,6 @@ class Plugin(PluginInstance, TriggerQueryHandler):
     def handleTriggerQuery(self, query) -> None:
         query_str = query.string.strip()
         if not query_str:
-            return
-
-        if query_str == 'reload':
-            self.load_bookmarks()
             return
 
         query_str = query_str.lower()
@@ -117,3 +113,11 @@ class Plugin(PluginInstance, TriggerQueryHandler):
         items_with_score.sort(key=lambda item: item[1], reverse=True)
         for item, _score in items_with_score:
             query.add(item)
+
+        item = StandardItem(
+            id=f'{md_name}/reload',
+            text='Reload bookmarks database',
+            iconUrls=[ICON_URL],
+            actions=[Action(f'{md_name}/reload', 'Reload bookmarks database', self.load_bookmarks)],
+        )
+        query.add(item)
