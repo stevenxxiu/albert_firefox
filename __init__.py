@@ -1,4 +1,5 @@
 import configparser
+import re
 import shutil
 import sqlite3
 import tempfile
@@ -31,10 +32,29 @@ class Bookmark(NamedTuple):
 
 
 def get_profile_path() -> Path:
+    """
+    :return: path of the last selected profile if it was used, or the dev profile
+    """
     firefox_data_path = Path.home() / '.mozilla/firefox/'
     profile = configparser.ConfigParser()
     profile.read(firefox_data_path / 'profiles.ini')
-    return firefox_data_path / profile.get('Profile0', 'Path')
+
+    last_used_profile = None
+    dev_profile = None
+    for key, obj in profile.items():
+        if not re.match(r'Profile\d+', key):
+            continue
+        # `Default = 1` indicates the profile was last used. Dev profiles don't have the setting.
+        if obj.get('Default', None) == '1':
+            last_used_profile = obj['Path']
+        elif obj['Name'].startswith('dev-edition-'):
+            dev_profile = obj['Path']
+
+    if last_used_profile and (firefox_data_path / 'places.sqlite').exists():
+        return firefox_data_path / last_used_profile
+    if dev_profile and (firefox_data_path / dev_profile / 'places.sqlite').exists():
+        return firefox_data_path / dev_profile
+    raise ValueError
 
 
 @contextmanager
