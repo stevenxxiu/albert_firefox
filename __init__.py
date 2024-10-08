@@ -9,6 +9,7 @@ from typing import Iterator, NamedTuple
 
 from albert import (  # pylint: disable=import-error
     Action,
+    Matcher,
     PluginInstance,
     StandardItem,
     TriggerQueryHandler,
@@ -94,19 +95,6 @@ def get_bookmarks(profile_path: Path) -> list[Bookmark]:
         return list(cur)
 
 
-def match_query(s: str, keywords: list[str]) -> tuple[int, int]:
-    first_match = -1
-    num_matches = 0
-    for keyword in keywords:
-        offset = s.find(keyword)
-        if offset == -1:
-            continue
-        num_matches += 1
-        if first_match == -1:
-            first_match = offset
-    return first_match, num_matches
-
-
 class Plugin(PluginInstance, TriggerQueryHandler):
     def __init__(self) -> None:
         TriggerQueryHandler.__init__(
@@ -120,26 +108,21 @@ class Plugin(PluginInstance, TriggerQueryHandler):
         self.bookmarks = get_bookmarks(self.profile_path)
 
     def handleTriggerQuery(self, query) -> None:
-        query_str = query.string.strip()
-        if not query_str:
-            return
+        matcher = Matcher(query.string)
 
-        keywords = query_str.lower().split()
         items_with_score = []
         for i, (name, url) in enumerate(self.bookmarks):
             score = None
-
-            name = name or ''
-            name_first_match, name_num_matches = match_query(name.lower(), keywords)
-            url_first_match, url_num_matches = match_query(url, keywords)
-
-            if name_first_match != -1:
-                score = (2, name_num_matches, -name_first_match)
-            elif url_first_match != -1:
-                score = (1, url_num_matches, -url_first_match)
-            else:
+            if not score:
+                match = matcher.match(name)
+                if match:
+                    score = (2, match.score)
+            if not score:
+                match = matcher.match(url)
+                if match:
+                    score = (1, match.score)
+            if not score:
                 continue
-
             items_with_score.append(
                 (
                     StandardItem(
