@@ -115,14 +115,18 @@ class Plugin(PluginInstance, TriggerQueryHandler):
         items_with_score = []
         for i, (name, url) in enumerate(self.bookmarks):
             score = None
+
+            name = name or ''
             name_index = name.lower().find(query_str)
             url_index = url.lower().find(query_str)
+
             if name_index != -1:
                 score = (2, -name_index)
             elif url_index != -1:
                 score = (1, -url_index)
             else:
                 continue
+
             items_with_score.append(
                 (
                     StandardItem(
@@ -130,7 +134,9 @@ class Plugin(PluginInstance, TriggerQueryHandler):
                         text=name,
                         subtext=url,
                         iconUrls=[ICON_URL],
-                        actions=[Action(md_name, name, lambda url=url: runDetachedProcess(['xdg-open', url]))],
+                        actions=[
+                            Action(md_name, f'{md_name}/{i}', lambda url=url: runDetachedProcess(['xdg-open', url]))
+                        ],
                     ),
                     score,
                 )
