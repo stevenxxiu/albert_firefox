@@ -77,6 +77,11 @@ def get_bookmarks(profile_path: Path) -> list[Bookmark]:
         # Ignore *Firefox* bookmarks menu official bookmarks
         cur.execute('SELECT id FROM moz_bookmarks WHERE title LIKE "Mozilla Firefox" AND fk IS NULL')
         ignored_folders = [res[0] for res in cur.fetchall()]
+
+        # Empty bound parameters aren't allowed
+        if not ignored_folders:
+            ignored_folders = [-1]
+
         cur.execute(
             """
             SELECT moz_bookmarks.title, moz_places.url FROM moz_bookmarks
