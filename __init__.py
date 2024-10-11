@@ -85,10 +85,11 @@ def get_bookmarks(profile_path: Path) -> list[Bookmark]:
 
         cur.execute(
             """
-            SELECT moz_bookmarks.title, moz_places.url FROM moz_bookmarks
+            SELECT moz_bookmarks.title, moz_places.url
+            FROM moz_bookmarks
             INNER JOIN moz_places ON moz_bookmarks.fk=moz_places.id
-            WHERE moz_bookmarks.fk is NOT NULL
-            AND moz_bookmarks.parent NOT IN (?)
+            WHERE moz_bookmarks.fk IS NOT NULL
+              AND moz_bookmarks.parent NOT IN (?)
             """,
             ignored_folders,
         )
