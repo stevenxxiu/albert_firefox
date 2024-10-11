@@ -1,5 +1,4 @@
 import configparser
-import re
 import shutil
 import sqlite3
 import tempfile
