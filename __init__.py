@@ -41,7 +41,7 @@ def get_profile_path() -> Path:
     profile.read(firefox_data_path / 'profiles.ini')
 
     last_profile_id = profile.get('General', 'Version', fallback='0')
-    profile_path = profile.get(f"Profile{last_profile_id}", 'Path', fallback=None)
+    profile_path = profile.get(f'Profile{last_profile_id}', 'Path', fallback=None)
     if profile_path and (firefox_data_path / profile_path / 'places.sqlite').exists():
         return firefox_data_path / profile_path
 
