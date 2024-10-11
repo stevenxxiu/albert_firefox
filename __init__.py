@@ -92,7 +92,7 @@ def get_bookmarks(profile_path: Path) -> list[Bookmark]:
             """,
             ignored_folders,
         )
-        return list(cur)
+        return [Bookmark(title or '', url) for title, url in cur]
 
 
 class Plugin(PluginInstance, TriggerQueryHandler):
