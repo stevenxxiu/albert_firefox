@@ -40,22 +40,12 @@ def get_profile_path() -> Path:
     profile = configparser.ConfigParser()
     profile.read(firefox_data_path / 'profiles.ini')
 
-    last_used_profile = None
-    dev_profile = None
-    for key, obj in profile.items():
-        if not re.match(r'Profile\d+', key):
-            continue
-        # `Default = 1` indicates the profile was last used. Dev profiles don't have the setting.
-        if obj.get('Default', None) == '1':
-            last_used_profile = obj['Path']
-        elif obj['Name'].startswith('dev-edition-'):
-            dev_profile = obj['Path']
+    last_profile_id = profile.get('General', 'Version', fallback='0')
+    profile_path = profile.get(f"Profile{last_profile_id}", 'Path', fallback=None)
+    if profile_path and (firefox_data_path / profile_path / 'places.sqlite').exists():
+        return firefox_data_path / profile_path
 
-    if last_used_profile and (firefox_data_path / 'places.sqlite').exists():
-        return firefox_data_path / last_used_profile
-    if dev_profile and (firefox_data_path / dev_profile / 'places.sqlite').exists():
-        return firefox_data_path / dev_profile
-    raise ValueError
+    raise ValueError('No Firefox profile found')
 
 
 @contextmanager
