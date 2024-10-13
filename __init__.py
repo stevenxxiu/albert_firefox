@@ -1,4 +1,5 @@
 import configparser
+import json
 import re
 import shutil
 import sqlite3
@@ -25,6 +26,7 @@ md_url = 'https://github.com/stevenxxiu/albert_firefox_steven'
 md_maintainers = '@stevenxxiu'
 
 ICON_URL = 'xdg:firefox-developer-edition'
+FIREFOX_DATA_PATH = Path.home() / '.mozilla/firefox/'
 
 
 class Bookmark(NamedTuple):
@@ -36,9 +38,8 @@ def get_profile_path() -> Path:
     """
     :return: path of the last selected profile if it was used, or the dev profile
     """
-    firefox_data_path = Path.home() / '.mozilla/firefox/'
     profile = configparser.ConfigParser()
-    profile.read(firefox_data_path / 'profiles.ini')
+    profile.read(FIREFOX_DATA_PATH / 'profiles.ini')
 
     last_used_profile = None
     dev_profile = None
@@ -51,10 +52,10 @@ def get_profile_path() -> Path:
         elif obj['Name'].startswith('dev-edition-'):
             dev_profile = obj['Path']
 
-    if last_used_profile and (firefox_data_path / 'places.sqlite').exists():
-        return firefox_data_path / last_used_profile
-    if dev_profile and (firefox_data_path / dev_profile / 'places.sqlite').exists():
-        return firefox_data_path / dev_profile
+    if last_used_profile and (FIREFOX_DATA_PATH / 'places.sqlite').exists():
+        return FIREFOX_DATA_PATH / last_used_profile
+    if dev_profile and (FIREFOX_DATA_PATH / dev_profile / 'places.sqlite').exists():
+        return FIREFOX_DATA_PATH / dev_profile
     raise ValueError
 
 
@@ -102,7 +103,14 @@ class Plugin(PluginInstance, TriggerQueryHandler):
             self, id=__name__, name=md_name, description=md_description, synopsis='<query>', defaultTrigger='br '
         )
         PluginInstance.__init__(self)
-        self.profile_path = get_profile_path()
+
+        settings_path = self.configLocation / 'settings.json'
+        if settings_path.exists():
+            with settings_path.open() as sr:
+                settings = json.load(sr)
+                self.profile_path = FIREFOX_DATA_PATH / settings['profileName']
+        else:
+            self.profile_path = get_profile_path()
         self.load_bookmarks()
 
     def load_bookmarks(self) -> None:
