@@ -7,6 +7,11 @@ To install, copy or symlink this directory to `~/.local/share/albert/python/plug
 ## Config
 Config is stored in `~/.config/albert/python.firefox/settings.json`.
 
+Config is optional. Without config, we look for a profile in order of:
+
+- The last used default profile.
+- The dev profile.
+
 Example config:
 
 ```json
