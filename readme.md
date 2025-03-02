@@ -25,6 +25,8 @@ To setup the project for development, run:
 
     $ cd firefox/
     $ pre-commit install --hook-type pre-commit --hook-type commit-msg
+    $ mkdir stubs/
+    $ ln --symbolic ~/.local/share/albert/python/plugins/albert.pyi stubs/
 
 To lint and format files, run:
 
