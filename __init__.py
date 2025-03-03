@@ -8,7 +8,7 @@ from contextlib import closing, contextmanager
 from pathlib import Path
 from typing import Iterator, NamedTuple
 
-from albert import (  # pylint: disable=import-error
+from albert import (
     Action,
     Matcher,
     PluginInstance,
@@ -17,13 +17,13 @@ from albert import (  # pylint: disable=import-error
     runDetachedProcess,
 )
 
-
-md_iid = '2.3'
-md_version = '1.0'
+md_iid = '3.0'
+md_version = '1.1'
 md_name = 'Firefox'
 md_description = 'Open Firefox bookmarks'
+md_license = 'MIT'
 md_url = 'https://github.com/stevenxxiu/albert_firefox_steven'
-md_maintainers = '@stevenxxiu'
+md_authors = ['@stevenxxiu']
 
 ICON_URL = 'xdg:firefox-developer-edition'
 FIREFOX_DATA_PATH = Path.home() / '.mozilla/firefox/'
@@ -99,12 +99,10 @@ def get_bookmarks(profile_path: Path) -> list[Bookmark]:
 
 class Plugin(PluginInstance, TriggerQueryHandler):
     def __init__(self) -> None:
-        TriggerQueryHandler.__init__(
-            self, id=__name__, name=md_name, description=md_description, synopsis='<query>', defaultTrigger='br '
-        )
         PluginInstance.__init__(self)
+        TriggerQueryHandler.__init__(self)
 
-        settings_path = self.configLocation / 'settings.json'
+        settings_path = self.configLocation() / 'settings.json'
         if settings_path.exists():
             with settings_path.open() as sr:
                 settings = json.load(sr)
@@ -112,6 +110,12 @@ class Plugin(PluginInstance, TriggerQueryHandler):
         else:
             self.profile_path = get_profile_path()
         self.load_bookmarks()
+
+    def synopsis(self, _query: str) -> str:
+        return '<query>'
+
+    def defaultTrigger(self):
+        return 'br '
 
     def load_bookmarks(self) -> None:
         self.bookmarks = get_bookmarks(self.profile_path)
