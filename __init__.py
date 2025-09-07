@@ -4,14 +4,16 @@ import re
 import shutil
 import sqlite3
 import tempfile
+from collections.abc import Iterator
 from contextlib import closing, contextmanager
 from pathlib import Path
-from typing import Iterator, NamedTuple
+from typing import Callable, NamedTuple, TypedDict, override
 
 from albert import (
     Action,
     Matcher,
     PluginInstance,
+    Query,
     StandardItem,
     TriggerQueryHandler,
     runDetachedProcess,
@@ -39,7 +41,7 @@ def get_profile_path() -> Path:
     :return: path of the last selected profile if it was used, or the dev profile
     """
     profile = configparser.ConfigParser()
-    profile.read(FIREFOX_DATA_PATH / 'profiles.ini')
+    _ = profile.read(FIREFOX_DATA_PATH / 'profiles.ini')
 
     last_used_profile = None
     dev_profile = None
@@ -63,10 +65,10 @@ def get_profile_path() -> Path:
 def open_places_db(profile_path: Path) -> Iterator[sqlite3.Connection]:
     with tempfile.TemporaryDirectory() as temp_dir:
         temp_dir = Path(temp_dir)
-        shutil.copy(profile_path / 'places.sqlite', temp_dir)
+        _ = shutil.copy(profile_path / 'places.sqlite', temp_dir)
         wal_path = profile_path / 'places.sqlite-wal'
         if wal_path.exists():
-            shutil.copy(wal_path, temp_dir)
+            _ = shutil.copy(wal_path, temp_dir)
 
         with closing(sqlite3.connect(temp_dir / 'places.sqlite')) as con:
             yield con
@@ -77,14 +79,14 @@ def get_bookmarks(profile_path: Path) -> list[Bookmark]:
         cur = con.cursor()
 
         # Ignore *Firefox* bookmarks menu official bookmarks
-        cur.execute('SELECT id FROM moz_bookmarks WHERE title LIKE "Mozilla Firefox" AND fk IS NULL')
-        ignored_folders = [res[0] for res in cur.fetchall()]
+        _ = cur.execute('SELECT id FROM moz_bookmarks WHERE title LIKE "Mozilla Firefox" AND fk IS NULL')
+        ignored_folders = [res[0] for res in cur.fetchall()]  # pyright: ignore[reportAny]
 
         # Empty bound parameters aren't allowed
         if not ignored_folders:
             ignored_folders = [-1]
 
-        cur.execute(
+        _ = cur.execute(
             """
             SELECT moz_bookmarks.title, moz_places.url
             FROM moz_bookmarks
@@ -94,10 +96,17 @@ def get_bookmarks(profile_path: Path) -> list[Bookmark]:
             """,
             ignored_folders,
         )
-        return [Bookmark(title or '', url) for title, url in cur]
+        return [Bookmark(title or '', url) for title, url in cur]  # pyright: ignore[reportAny]
+
+
+class FirefoxSettings(TypedDict):
+    profileName: str
 
 
 class Plugin(PluginInstance, TriggerQueryHandler):
+    profile_path: Path
+    bookmarks: list[Bookmark]
+
     def __init__(self) -> None:
         PluginInstance.__init__(self)
         TriggerQueryHandler.__init__(self)
@@ -105,37 +114,43 @@ class Plugin(PluginInstance, TriggerQueryHandler):
         settings_path = self.configLocation() / 'settings.json'
         if settings_path.exists():
             with settings_path.open() as sr:
-                settings = json.load(sr)
+                settings: FirefoxSettings = json.load(sr)  # pyright: ignore[reportAny]
                 self.profile_path = FIREFOX_DATA_PATH / settings['profileName']
         else:
             self.profile_path = get_profile_path()
         self.load_bookmarks()
 
+    @override
     def synopsis(self, _query: str) -> str:
         return '<query>'
 
+    @override
     def defaultTrigger(self):
         return 'br '
 
     def load_bookmarks(self) -> None:
         self.bookmarks = get_bookmarks(self.profile_path)
 
-    def handleTriggerQuery(self, query) -> None:
+    @override
+    def handleTriggerQuery(self, query: Query) -> None:
         matcher = Matcher(query.string)
 
-        items_with_score = []
+        items_with_score: list[tuple[StandardItem, tuple[int, float]]] = []
         for i, (name, url) in enumerate(self.bookmarks):
-            score = None
+            score: tuple[int, float] | None = None
             if not score:
                 match = matcher.match(name)
                 if match:
+                    assert isinstance(match.score, float)
                     score = (2, match.score)
             if not score:
                 match = matcher.match(url)
                 if match:
+                    assert isinstance(match.score, float)
                     score = (1, match.score)
             if not score:
                 continue
+            open_url_call: Callable[[str], int] = lambda url=url: runDetachedProcess(['xdg-open', url])  # noqa: E731
             items_with_score.append(
                 (
                     StandardItem(
@@ -143,16 +158,14 @@ class Plugin(PluginInstance, TriggerQueryHandler):
                         text=name,
                         subtext=url,
                         iconUrls=[ICON_URL],
-                        actions=[
-                            Action(md_name, f'{md_name}/{i}', lambda url=url: runDetachedProcess(['xdg-open', url]))
-                        ],
+                        actions=[Action(md_name, f'{md_name}/{i}', open_url_call)],
                     ),
                     score,
                 )
             )
         items_with_score.sort(key=lambda item: item[1], reverse=True)
         for item, _score in items_with_score:
-            query.add(item)
+            query.add(item)  # pyright: ignore[reportUnknownMemberType]
 
         item = StandardItem(
             id=f'{md_name}/reload',
@@ -160,4 +173,4 @@ class Plugin(PluginInstance, TriggerQueryHandler):
             iconUrls=[ICON_URL],
             actions=[Action(f'{md_name}/reload', 'Reload bookmarks database', self.load_bookmarks)],
         )
-        query.add(item)
+        query.add(item)  # pyright: ignore[reportUnknownMemberType]
