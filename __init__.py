@@ -153,7 +153,7 @@ class Plugin(PluginInstance, TriggerQueryHandler):
                 continue
             open_url_call: Callable[[str], int] = lambda url=url: runDetachedProcess(['xdg-open', url])  # noqa: E731
             item = StandardItem(
-                id=f'{md_name}/{i}',
+                id=self.id(),
                 text=name,
                 subtext=url,
                 iconUrls=[ICON_URL],
@@ -164,7 +164,7 @@ class Plugin(PluginInstance, TriggerQueryHandler):
         items: list[Item] = [item for item, _score in items_with_score]
 
         item = StandardItem(
-            id=f'{md_name}/reload',
+            id=self.id(),
             text='Reload bookmarks database',
             iconUrls=[ICON_URL],
             actions=[Action(f'{md_name}/reload', 'Reload bookmarks database', self.load_bookmarks)],
