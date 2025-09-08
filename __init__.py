@@ -11,6 +11,7 @@ from typing import Callable, NamedTuple, TypedDict, override
 
 from albert import (
     Action,
+    Item,
     Matcher,
     PluginInstance,
     Query,
@@ -151,21 +152,16 @@ class Plugin(PluginInstance, TriggerQueryHandler):
             if not score:
                 continue
             open_url_call: Callable[[str], int] = lambda url=url: runDetachedProcess(['xdg-open', url])  # noqa: E731
-            items_with_score.append(
-                (
-                    StandardItem(
-                        id=f'{md_name}/{i}',
-                        text=name,
-                        subtext=url,
-                        iconUrls=[ICON_URL],
-                        actions=[Action(md_name, f'{md_name}/{i}', open_url_call)],
-                    ),
-                    score,
-                )
+            item = StandardItem(
+                id=f'{md_name}/{i}',
+                text=name,
+                subtext=url,
+                iconUrls=[ICON_URL],
+                actions=[Action(md_name, f'{md_name}/{i}', open_url_call)],
             )
+            items_with_score.append((item, score))
         items_with_score.sort(key=lambda item: item[1], reverse=True)
-        for item, _score in items_with_score:
-            query.add(item)  # pyright: ignore[reportUnknownMemberType]
+        items: list[Item] = [item for item, _score in items_with_score]
 
         item = StandardItem(
             id=f'{md_name}/reload',
@@ -173,4 +169,5 @@ class Plugin(PluginInstance, TriggerQueryHandler):
             iconUrls=[ICON_URL],
             actions=[Action(f'{md_name}/reload', 'Reload bookmarks database', self.load_bookmarks)],
         )
-        query.add(item)  # pyright: ignore[reportUnknownMemberType]
+        items.append(item)
+        query.add(items)  # pyright: ignore[reportUnknownMemberType]
