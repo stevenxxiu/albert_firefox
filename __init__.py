@@ -17,10 +17,11 @@ from albert import (
     Query,
     StandardItem,
     TriggerQueryHandler,
+    makeThemeIcon,
     runDetachedProcess,
 )
 
-md_iid = '3.0'
+md_iid = '4.0'
 md_version = '1.1'
 md_name = 'Firefox'
 md_description = 'Open Firefox bookmarks'
@@ -28,7 +29,7 @@ md_license = 'MIT'
 md_url = 'https://github.com/stevenxxiu/albert_firefox_steven'
 md_authors = ['@stevenxxiu']
 
-ICON_URL = 'xdg:firefox-developer-edition'
+ICON_NAME = 'firefox-developer-edition'
 FIREFOX_DATA_PATH = Path.home() / '.mozilla/firefox/'
 
 
@@ -156,7 +157,7 @@ class Plugin(PluginInstance, TriggerQueryHandler):
                 id=self.id(),
                 text=name,
                 subtext=url,
-                iconUrls=[ICON_URL],
+                icon_factory=lambda: makeThemeIcon(ICON_NAME),
                 actions=[Action(md_name, f'{md_name}/{i}', open_url_call)],
             )
             items_with_score.append((item, score))
@@ -166,7 +167,7 @@ class Plugin(PluginInstance, TriggerQueryHandler):
         item = StandardItem(
             id=self.id(),
             text='Reload bookmarks database',
-            iconUrls=[ICON_URL],
+            icon_factory=lambda: makeThemeIcon(ICON_NAME),
             actions=[Action(f'{md_name}/reload', 'Reload bookmarks database', self.load_bookmarks)],
         )
         items.append(item)
