@@ -154,21 +154,21 @@ class Plugin(PluginInstance, TriggerQueryHandler):
                 continue
             open_url_call: Callable[[str], int] = lambda url=url: runDetachedProcess(['xdg-open', url])  # noqa: E731
             item = StandardItem(
-                id=self.id(),
+                id=str(i),
                 text=name,
                 subtext=url,
                 icon_factory=lambda: makeThemeIcon(ICON_NAME),
-                actions=[Action(md_name, f'{md_name}/{i}', open_url_call)],
+                actions=[Action('open', 'Open', open_url_call)],
             )
             items_with_score.append((item, score))
         items_with_score.sort(key=lambda item: item[1], reverse=True)
         items: list[Item] = [item for item, _score in items_with_score]
 
         item = StandardItem(
-            id=self.id(),
+            id='reload',
             text='Reload bookmarks database',
             icon_factory=lambda: makeThemeIcon(ICON_NAME),
-            actions=[Action(f'{md_name}/reload', 'Reload bookmarks database', self.load_bookmarks)],
+            actions=[Action('reload', 'Reload bookmarks database', self.load_bookmarks)],
         )
         items.append(item)
         query.add(items)  # pyright: ignore[reportUnknownMemberType]
